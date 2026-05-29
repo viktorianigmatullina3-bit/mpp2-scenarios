@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Обучение МПП2: логика работы с лидом</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #607086;
+      --line: #d9e1ec;
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --blue: #1f6feb;
+      --green: #238636;
+      --yellow: #9a6700;
+      --red: #c53030;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: Inter, Arial, sans-serif;
+      line-height: 1.45;
+    }
+
+    header {
+      background: #101827;
+      color: #fff;
+      padding: 38px 24px;
+    }
+
+    header h1 {
+      margin: 0 0 10px;
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    header p {
+      margin: 0;
+      max-width: 960px;
+      color: #dce6f5;
+      font-size: 18px;
+    }
+
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    section {
+      margin: 0 0 22px;
+      padding: 24px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 18px 0 8px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    p { margin: 0 0 10px; }
+    ul { padding-left: 22px; }
+    li { margin: 6px 0; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef3f8;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tag.green { background: #e9f7ed; color: var(--green); }
+    .tag.blue { background: #e8f1ff; color: var(--blue); }
+    .tag.yellow { background: #fff7df; color: var(--yellow); }
+    .tag.red { background: #fff0f0; color: var(--red); }
+
+    .note {
+      border: 1px solid #bdd3f4;
+      background: #eef6ff;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 12px 0;
+    }
+
+    .danger {
+      border: 1px solid #f0c2c2;
+      background: #fff3f3;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 12px 0;
+    }
+
+    .flow {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .step {
+      min-width: 160px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+    }
+
+    .step b { display: block; margin-bottom: 4px; }
+    .step small { color: var(--muted); }
+
+    button {
+      appearance: none;
+      border: 1px solid #b8c4d6;
+      background: #fff;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    button:hover { border-color: var(--blue); }
+    button.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .choice.correct {
+      border-color: #2da44e;
+      background: #ecfdf1;
+    }
+
+    .choice.wrong {
+      border-color: #d1242f;
+      background: #fff1f1;
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #f7fafc;
+      border: 1px solid var(--line);
+    }
+
+    .feedback.show { display: block; }
+
+    .quiz-question {
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      margin-top: 14px;
+    }
+
+    .result {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 8px;
+      background: #eef6ff;
+      border: 1px solid #bdd3f4;
+      font-weight: 700;
+    }
+
+    .compact-list {
+      columns: 2;
+    }
+
+    @media (max-width: 760px) {
+      main { padding: 14px; }
+      section { padding: 18px; }
+      .compact-list { columns: 1; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Обучение МПП2</h1>
+    <p>Короткая логика работы с лидом: какой статус выбрать, что делать дальше и как не слить клиента.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Что нужно запомнить</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Лид живет 5 минут</h3>
+          <p>Не обработал за 5 минут - лид уходит другому клоузеру.</p>
+        </div>
+        <div class="card">
+          <h3>Каждый звонок = исход</h3>
+          <p>Нельзя закончить “просто поговорили”. Нужен результат в АМО.</p>
+        </div>
+        <div class="card">
+          <h3>Думает = 72 часа</h3>
+          <p>Одна причина, три касания. Не дожал - Догрев.</p>
+        </div>
+        <div class="card">
+          <h3>Каждое касание продает</h3>
+          <p>КИ, документы и договор - инструменты. Финал касания всегда про оплату.</p>
+        </div>
+        <div class="card">
+          <h3>Скидка только сегодня</h3>
+          <p>10 000 ₽ предлагается только при оплате сегодня. Не бронируется.</p>
+        </div>
+        <div class="card">
+          <h3>2 000 ₽ не финал</h3>
+          <p>Частичка фиксирует сделку, но клиент идет в ОС только после нормального платежа.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Карта исходов после звонка</h2>
+      <div class="flow">
+        <div class="step"><b>Оплатил</b><small>Полный платеж / первый платеж рассрочки</small></div>
+        <div class="step"><b>2 000 ₽</b><small>Оплатил частичку</small></div>
+        <div class="step"><b>Назвал дату</b><small>Обещал оплатить</small></div>
+        <div class="step"><b>Нет действия</b><small>Думает + причина</small></div>
+        <div class="step"><b>Не ответил</b><small>Недозвон</small></div>
+        <div class="step"><b>Отказ/нецелевой</b><small>Закрыто + причина</small></div>
+      </div>
+      <div class="note">
+        Если клиент не оплатил, не внес 2 000 ₽ и не назвал дату, нельзя ставить “Обещал оплатить”. Это “Думает” с причиной.
+      </div>
+    </section>
+
+    <section>
+      <h2>Как выбрать причину “Думает”</h2>
+      <div class="grid">
+        <div class="card"><h3>Нет денег</h3><p>Клиент не поставил процедуру в финансовый приоритет.</p></div>
+        <div class="card"><h3>Дорого</h3><p>Клиент смотрит на цену, а не на стоимость бездействия.</p></div>
+        <div class="card"><h3>Не доверяет</h3><p>Клиент боится ошибиться или потерять деньги.</p></div>
+        <div class="card"><h3>Боится последствий</h3><p>Клиент боится самой процедуры: имущество, работа, семья, ограничения.</p></div>
+        <div class="card"><h3>ЛПР</h3><p>Клиент хочет обсудить с человеком, который влияет на решение.</p></div>
+        <div class="card"><h3>Не горит</h3><p>Клиент думает, что ожидание бесплатно и можно потянуть.</p></div>
+        <div class="card"><h3>Конкуренты</h3><p>Клиент сравнивает условия или ищет дешевле.</p></div>
+        <div class="card"><h3>Сомневается в процедуре</h3><p>Клиент не уверен, что банкротство ему подходит.</p></div>
+        <div class="card"><h3>Без конкретики</h3><p>Клиент сказал “подумаю”, но причина не вскрыта.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Тренажер 1: выбери исход</h2>
+      <div id="statusTrainer"></div>
+    </section>
+
+    <section>
+      <h2>Тренажер 2: выбери причину “Думает”</h2>
+      <div id="reasonTrainer"></div>
+    </section>
+
+    <section>
+      <h2>Тест допуска</h2>
+      <p>Ответь на вопросы. Проходной результат: 8 из 10.</p>
+      <div id="quiz"></div>
+      <button class="primary" id="checkQuiz">Проверить тест</button>
+      <div id="quizResult" class="result" style="display:none"></div>
+    </section>
+
+    <section>
+      <h2>Запрещенные ошибки</h2>
+      <ul class="compact-list">
+        <li>Ставить “Думает” без причины.</li>
+        <li>Ставить “Обещал оплатить” без даты оплаты.</li>
+        <li>Считать один звонок недозвоном.</li>
+        <li>Ждать дату оплаты без касаний.</li>
+        <li>Заканчивать касание без попытки оплаты.</li>
+        <li>Предлагать скидку “на потом”.</li>
+        <li>Считать 2 000 ₽ полноценной продажей.</li>
+        <li>Не передать оплатившего клиента в ОС за 2 часа.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    const statusCases = [
+      {
+        text: 'Клиент сказал: “Оплачу 15 числа, после зарплаты”. Деньги сейчас не внес.',
+        answer: 'Обещал оплатить',
+        options: ['Думает', 'Обещал оплатить', 'Догрев', 'Закрыто'],
+        explain: 'Есть точная дата оплаты до 14 дней, значит это “Обещал оплатить”.'
+      },
+      {
+        text: 'Клиент внес 2 000 ₽, но договор еще не подписал.',
+        answer: 'Оплатил частичку',
+        options: ['Оплатил частичку', 'Полный платеж', 'Думает', 'Недозвон'],
+        explain: 'Факт 2 000 ₽ переводит в “Оплатил частичку”. Договор нужно дожать следующим шагом.'
+      },
+      {
+        text: 'Клиент сказал: “Мне надо подумать”, дату не назвал, денег не внес.',
+        answer: 'Думает',
+        options: ['Обещал оплатить', 'Думает', 'Догрев', 'Полный платеж'],
+        explain: 'Нет денег, частички и даты. Это “Думает” с обязательной причиной.'
+      },
+      {
+        text: 'Клиент не ответил. Менеджер сделал 3 звонка и отправил сообщение.',
+        answer: 'Недозвон',
+        options: ['Недозвон', 'Думает', 'Закрыто', 'Догрев'],
+        explain: 'Полноценная попытка недозвона = 3 звонка + сообщение.'
+      }
+    ];
+
+    const reasonCases = [
+      {
+        text: '“Я еще плачу, пока справляюсь, мне не срочно”.',
+        answer: 'Не горит',
+        options: ['Нет денег', 'Не горит', 'Дорого', 'ЛПР'],
+        explain: 'Клиент не чувствует срочности. Нужно показать последствия ожидания.'
+      },
+      {
+        text: '“Я покажу мужу, без него решение не принимаю”.',
+        answer: 'ЛПР',
+        options: ['ЛПР', 'Не доверяет', 'Без конкретики', 'Дорого'],
+        explain: 'Есть человек, который влияет на решение. Нужно подключать его на звонок.'
+      },
+      {
+        text: '“А вдруг у меня машину заберут?”',
+        answer: 'Боится последствий',
+        options: ['Не доверяет', 'Боится последствий', 'Конкуренты', 'Нет денег'],
+        explain: 'Клиент боится последствий процедуры, а не компании.'
+      },
+      {
+        text: '“В другой компании мне сказали дешевле”.',
+        answer: 'Конкуренты',
+        options: ['Дорого', 'Конкуренты', 'Не горит', 'Без конкретики'],
+        explain: 'Клиент сравнивает предложения. Нужно переводить сравнение в безопасность результата.'
+      }
+    ];
+
+    const quizQuestions = [
+      {
+        q: 'Сколько времени есть на обработку нового лида?',
+        options: ['5 минут', '15 минут', '1 час'],
+        answer: '5 минут'
+      },
+      {
+        q: 'Что считается полноценной попыткой недозвона?',
+        options: ['1 звонок', '3 звонка + сообщение', 'Сообщение в мессенджер'],
+        answer: '3 звонка + сообщение'
+      },
+      {
+        q: 'Когда можно ставить “Обещал оплатить”?',
+        options: ['Клиент сказал “подумаю”', 'Клиент назвал точную дату оплаты', 'Клиент не ответил'],
+        answer: 'Клиент назвал точную дату оплаты'
+      },
+      {
+        q: 'Сколько живет статус “Думает”?',
+        options: ['24 часа', '72 часа', 'Пока менеджер ведет клиента'],
+        answer: '72 часа'
+      },
+      {
+        q: 'Скидка 10 000 ₽ предлагается...',
+        options: ['Если клиент подпишет договор', 'Только при оплате сегодня', 'Если клиент обещает оплатить в дату'],
+        answer: 'Только при оплате сегодня'
+      },
+      {
+        q: 'Что должен сделать менеджер в конце каждого касания?',
+        options: ['Отправить информацию', 'Попытаться вывести на оплату', 'Поставить задачу через неделю'],
+        answer: 'Попытаться вывести на оплату'
+      },
+      {
+        q: 'Клиент внес 2 000 ₽. Это...',
+        options: ['Полный запуск ОС', 'Фиксация сделки', 'Закрыто'],
+        answer: 'Фиксация сделки'
+      },
+      {
+        q: 'После полного платежа клиент должен быть передан в ОС за...',
+        options: ['2 часа', '24 часа', '3 дня'],
+        answer: '2 часа'
+      },
+      {
+        q: 'Если клиент в “Думает” не продвинулся за 72 часа, он уходит...',
+        options: ['В Догрев', 'В Обещал оплатить', 'В Полный платеж'],
+        answer: 'В Догрев'
+      },
+      {
+        q: 'Если клиент говорит “подумаю”, но не объясняет почему, причина...',
+        options: ['Нет денег', 'Без конкретики', 'Конкуренты'],
+        answer: 'Без конкретики'
+      }
+    ];
+
+    function renderTrainer(rootId, cases) {
+      const root = document.getElementById(rootId);
+      root.innerHTML = cases.map((item, index) => `
+        <div class="quiz-question">
+          <h3>Ситуация ${index + 1}</h3>
+          <p>${item.text}</p>
+          <div class="choices">
+            ${item.options.map(option => `<button class="choice" data-answer="${item.answer}" data-explain="${item.explain}" data-option="${option}">${option}</button>`).join('')}
+          </div>
+          <div class="feedback"></div>
+        </div>
+      `).join('');
+    }
+
+    function renderQuiz() {
+      const root = document.getElementById('quiz');
+      root.innerHTML = quizQuestions.map((item, index) => `
+        <div class="quiz-question">
+          <h3>${index + 1}. ${item.q}</h3>
+          <div class="choices">
+            ${item.options.map(option => `
+              <label class="card">
+                <input type="radio" name="q${index}" value="${option}">
+                ${option}
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('.choice');
+      if (!button) return;
+      const parent = button.closest('.quiz-question');
+      const buttons = parent.querySelectorAll('.choice');
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.option === btn.dataset.answer) btn.classList.add('correct');
+      });
+      if (button.dataset.option !== button.dataset.answer) button.classList.add('wrong');
+      const feedback = parent.querySelector('.feedback');
+      feedback.textContent = button.dataset.option === button.dataset.answer
+        ? 'Верно. ' + button.dataset.explain
+        : 'Неверно. Правильно: ' + button.dataset.answer + '. ' + button.dataset.explain;
+      feedback.classList.add('show');
+    });
+
+    document.getElementById('checkQuiz').addEventListener('click', () => {
+      let score = 0;
+      quizQuestions.forEach((item, index) => {
+        const checked = document.querySelector(`input[name="q${index}"]:checked`);
+        if (checked && checked.value === item.answer) score++;
+      });
+      const result = document.getElementById('quizResult');
+      result.style.display = 'block';
+      if (score >= 8) {
+        result.textContent = `Результат: ${score}/10. Зачет. Логику можно применять в работе.`;
+      } else {
+        result.textContent = `Результат: ${score}/10. Нужно повторить правила и пройти тест еще раз.`;
+      }
+    });
+
+    renderTrainer('statusTrainer', statusCases);
+    renderTrainer('reasonTrainer', reasonCases);
+    renderQuiz();
+  </script>
+</body>
+</html>
